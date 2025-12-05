@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientist Network 3D Visualization</title>
+    <script src="https://unpkg.com/3d-force-graph"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            color: white;
+            overflow: hidden;
+        }
+
+        #3d-graph {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .control-group input {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            background: #333;
+            color: white;
+        }
+
+        .control-group button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .control-group button:hover {
+            opacity: 0.9;
+        }
+
+        .info-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .info-panel h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .scientist-info {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .scientist-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .scientist-details {
+            font-size: 0.9em;
+            color: #ccc;
+            line-height: 1.4;
+        }
+
+        .connections {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 2000;
+        }
+
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+
+        .back-btn:hover {
+            opacity: 0.9;
+        }
+
+        .search-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            z-index: 1001;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-container input {
+            padding: 10px 15px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            background: #1a1a1a;
+            color: white;
+            font-size: 1rem;
+            width: 300px;
+            outline: none;
+        }
+
+        .search-container input:focus {
+            border-color: #42a5f5;
+            box-shadow: 0 0 10px rgba(66, 165, 245, 0.3);
+        }
+
+        .search-container button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+
+        .search-container button:hover {
+            opacity: 0.9;
+        }
+
+        .search-results {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            z-index: 1001;
+            color: white;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .search-results.error {
+            background: rgba(255, 107, 107, 0.9);
+        }
+
+        .search-results.success {
+            background: rgba(76, 175, 80, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Loading Scientist Network...</div>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" list="scientistsList" placeholder="Search for a scientist by name..." onkeypress="handleSearchKeypress(event)" autocomplete="off">
+        <datalist id="scientistsList"></datalist>
+        <button onclick="searchScientist()">Search</button>
+        <button onclick="clearHighlight()">Clear</button>
+    </div>
+
+    <div id="searchResults" class="search-results" style="display: none;"></div>
+
+    <button class="back-btn" onclick="window.location.href='/'" style="top: 90px;">← Back to Landing Page</button>
+
+            <div class="controls">
+            <div class="control-group">
+                <label>Progressive Mode</label>
+                <button id="progressiveToggle" onclick="toggleProgressiveMode()">Enable Progressive</button>
+            </div>
+            
+            <div class="control-group" id="progressiveControls" style="display: none;">
+                <label>Show Scientists up to ID: <span id="currentIdDisplay">1</span></label>
+                <input type="range" id="idSlider" min="1" max="1493" value="1" step="1">
+                <button onclick="resetCamera()">Reset Camera</button>
+                <button onclick="toggleAutoRotate()">Toggle Rotation</button>
+            </div>
+            
+            <div class="control-group" id="normalControls">
+                <label>Visualization Mode</label>
+                <button id="clusterToggle" onclick="toggleClusterMode()">Show Clusters</button>
+                <button onclick="resetCamera()">Reset Camera</button>
+                <button onclick="toggleAutoRotate()">Toggle Rotation</button>
+            </div>
+        </div>
+
+    <div class="info-panel" id="infoPanel">
+        <h3>🔬 Scientist Information</h3>
+        <div id="scientistDetails">
+            <p>Click on a node to see scientist details</p>
+        </div>
+    </div>
+
+    <div id="3d-graph"></div>
+
+    <script>
+        let graph;
+        let autoRotate = false;
+        let networkData = null;
+        let progressiveMode = false;
+        let currentMaxId = 1;
+        let clusterMode = false;
+        let nodeClusters = {};
+        let highlightedNode = null;
+        let originalNodeColor = null;
+
+        // Load network data
+        async function loadNetworkData() {
+            try {
+                const response = await fetch('/data');
+                networkData = await response.json();
+                
+                if (networkData.error) {
+                    throw new Error(networkData.error);
+                }
+
+                initializeGraph();
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Error loading network data:', error);
+                document.getElementById('loading').innerHTML = `
+                    <div style="color: #ff6b6b;">Error loading data: ${error.message}</div>
+                    <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Retry</button>
+                `;
+            }
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function populateScientistsList() {
+            const datalist = document.getElementById('scientistsList');
+            datalist.innerHTML = ''; // Clear existing options
+            
+            if (!networkData || !networkData.nodes) return;
+            
+            // Sort scientists by name for easier browsing
+            const sortedScientists = [...networkData.nodes].sort((a, b) => 
+                a.name.localeCompare(b.name)
+            );
+            
+            // Add each scientist name as an option
+            sortedScientists.forEach(node => {
+                const option = document.createElement('option');
+                option.value = node.name;
+                option.setAttribute('data-id', node.id);
+                datalist.appendChild(option);
+            });
+            
+            console.log(`Populated dropdown with ${sortedScientists.length} scientists`);
+        }
+
+        function initializeGraph() {
+            // Debug: Log the data
+            console.log('Network Data:', networkData);
+            console.log('Nodes count:', networkData.nodes.length);
+            console.log('Links count:', networkData.links.length);
+            
+            // Populate the scientist dropdown list
+            populateScientistsList();
+            
+            // Prepare data for 3D force graph
+            const graphData = {
+                nodes: networkData.nodes.map(node => ({
+                    id: node.id.toString(), // Convert to string to avoid ID conflicts
+                    name: node.name,
+                    biography: node.biography_full,
+                    connections: node.connections,
+                    page: node.page_number,
+                    size: node.connections.length + 1 // Size based on number of connections
+                })),
+                links: networkData.links.map(link => ({
+                    source: link.source.toString(), // Convert to string
+                    target: link.target.toString()  // Convert to string
+                }))
+            };
+            
+            // Filter out links that reference non-existent nodes
+            const validNodeIds = new Set(graphData.nodes.map(n => n.id));
+            graphData.links = graphData.links.filter(link => 
+                validNodeIds.has(link.source) && validNodeIds.has(link.target)
+            );
+            
+            console.log('Valid links after filtering:', graphData.links.length);
+            console.log('Filtered out links to future scientists');
+            
+            console.log('Processed Graph Data:', graphData);
+            console.log('Processed Nodes:', graphData.nodes);
+            console.log('Processed Links:', graphData.links);
+
+            // Create a 50-color blue palette (brighter to darker)
+            const bluePalette = [
+                '#E3F2FD', '#BBDEFB', '#90CAF9', '#64B5F6', '#42A5F5', // Very light blues
+                '#2196F3', '#1E88E5', '#1976D2', '#1565C0', '#0D47A1', // Light blues
+                '#0D47A1', '#0A3D91', '#083882', '#063372', '#042962', // Medium blues
+                '#031F52', '#021542', '#010B32', '#000122', '#000012', // Dark blues
+                '#000012', '#000012', '#000012', '#000012', '#000012', // Very dark blues
+                '#000012', '#000012', '#000012', '#000012', '#000012', // Very dark blues
+                '#000012', '#000012', '#000012', '#000012', '#000012', // Very dark blues
+                '#000012', '#000012', '#000012', '#000012', '#000012', // Very dark blues
+                '#000012', '#000012', '#000012', '#000012', '#000012', // Very dark blues
+                '#000012', '#000012', '#000012', '#000012', '#000012'  // Very dark blues
+            ];
+
+            // Initialize 3D force graph with reduced forces for tighter clustering
+            graph = ForceGraph3D()(document.getElementById('3d-graph'))
+                .graphData(graphData)
+                .nodeLabel(node => `
+                    <div style="background: rgba(0,0,0,0.8); padding: 10px; border-radius: 5px; color: white;">
+                        <strong>${node.name}</strong><br>
+                        ID: ${node.id}<br>
+                        Connections: ${node.connections.length}<br>
+                        Page: ${node.page}<br>
+                        Cluster: ${node.cluster || 'None'}
+                    </div>
+                `)
+                .nodeColor(node => {
+                    // Color nodes by cluster for better network visualization
+                    if (node.cluster !== undefined) {
+                        const clusterColors = [
+                            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+                            '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
+                        ];
+                        return clusterColors[node.cluster % clusterColors.length];
+                    } else {
+                        // Fallback to ID-based coloring
+                        const nodeId = parseInt(node.id);
+                        const paletteIndex = Math.min(Math.floor(nodeId / 30), bluePalette.length - 1);
+                        return bluePalette[paletteIndex];
+                    }
+                })
+                .nodeRelSize(10)  // Much bigger node size for better visibility
+                .linkColor(() => '#999999')  // Darker grey links
+                .linkWidth(1)    // Hardcoded link width
+                .linkOpacity(0.6)  // Reduced opacity for more subtle connections
+                .onNodeClick(showScientistInfo)
+                .onBackgroundClick(() => hideScientistInfo())
+                .enableNodeDrag(true)
+                .enableNavigationControls(true);
+            
+            // Apply reduced forces for tighter clustering
+            if (graph.d3Force) {
+                graph.d3Force('charge').strength(-100);  // Reduced from -400
+                graph.d3Force('link').distance(50);      // Reduced from 100
+                graph.d3Force('center').strength(0.1);   // Weak centering force
+            }
+            
+            // Debug: Log the graph object
+            console.log('Graph object:', graph);
+            console.log('Graph data after initialization:', graph.graphData());
+            
+            // Force a refresh of the graph and start simulation
+            setTimeout(() => {
+                graph.refresh();
+                console.log('Graph refreshed');
+                
+                // Manually start the force simulation if it's not running
+                if (graph.d3Force) {
+                    console.log('Starting force simulation...');
+                    graph.d3Force('charge').strength(-400);
+                    graph.d3Force('link').distance(100);
+                }
+            }, 1000);
+
+            // Set up controls
+            setupControls();
+        }
+
+        function setupControls() {
+            // Set up progressive mode slider
+            const idSlider = document.getElementById('idSlider');
+            idSlider.addEventListener('input', (e) => {
+                currentMaxId = parseInt(e.target.value);
+                if (progressiveMode) {
+                    updateProgressiveGraph();
+                }
+            });
+        }
+
+        function showScientistInfo(node) {
+            const infoPanel = document.getElementById('infoPanel');
+            const detailsDiv = document.getElementById('scientistDetails');
+            
+            const connections = node.connections.map(id => {
+                const targetNode = networkData.nodes.find(n => n.id === id);
+                return targetNode ? targetNode.name : `Unknown Scientist ${id}`;
+            });
+
+            detailsDiv.innerHTML = `
+                <div class="scientist-info">
+                    <div class="scientist-name">${node.name}</div>
+                    <div class="scientist-details">
+                        <strong>ID:</strong> ${node.id}<br>
+                        <strong>Page:</strong> ${node.page}<br>
+                        <strong>Connections:</strong> ${node.connections.length}<br>
+                        <strong>Biography:</strong> ${node.biography.substring(0, 200)}...
+                    </div>
+                    <div class="connections">
+                        <strong>Connected to:</strong> ${connections.join(', ')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function hideScientistInfo() {
+            document.getElementById('scientistDetails').innerHTML = '<p>Click on a node to see scientist details</p>';
+        }
+
+        function resetCamera() {
+            graph.cameraPosition({ x: 0, y: 0, z: 300 });
+        }
+
+        function toggleProgressiveMode() {
+            progressiveMode = !progressiveMode;
+            const toggleBtn = document.getElementById('progressiveToggle');
+            const progressiveControls = document.getElementById('progressiveControls');
+            const normalControls = document.getElementById('normalControls');
+            
+            if (progressiveMode) {
+                toggleBtn.textContent = 'Disable Progressive';
+                toggleBtn.style.background = 'linear-gradient(45deg, #ff6b6b, #ee5a24)';
+                progressiveControls.style.display = 'block';
+                normalControls.style.display = 'none';
+                
+                // Start with just the first scientist
+                currentMaxId = 1;
+                updateProgressiveGraph();
+            } else {
+                toggleBtn.textContent = 'Enable Progressive';
+                toggleBtn.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+                progressiveControls.style.display = 'none';
+                normalControls.style.display = 'block';
+                
+                // Show all scientists
+                currentMaxId = 1493;
+                updateProgressiveGraph();
+            }
+        }
+        
+        function detectClusters(nodes, links) {
+            // Better clustering using Louvain-like community detection
+            const visited = new Set();
+            const clusters = [];
+            let clusterId = 0;
+            
+            // Create adjacency list
+            const adjacency = {};
+            nodes.forEach(node => {
+                adjacency[node.id] = [];
+            });
+            
+            links.forEach(link => {
+                if (adjacency[link.source] && adjacency[link.target]) {
+                    adjacency[link.source].push(link.target);
+                    adjacency[link.target].push(link.source);
+                }
+            });
+            
+            // Find clusters based on connection density and size
+            const processedNodes = new Set();
+            
+            nodes.forEach(node => {
+                if (processedNodes.has(node.id)) return;
+                
+                // Start a new cluster from this node
+                const cluster = [];
+                const queue = [node.id];
+                processedNodes.add(node.id);
+                
+                while (queue.length > 0) {
+                    const currentId = queue.shift();
+                    cluster.push(currentId);
+                    
+                    // Add unprocessed neighbors
+                    if (adjacency[currentId]) {
+                        adjacency[currentId].forEach(neighborId => {
+                            if (!processedNodes.has(neighborId)) {
+                                processedNodes.add(neighborId);
+                                queue.push(neighborId);
+                            }
+                        });
+                    }
+                }
+                
+                // Only create clusters of reasonable size (2-50 nodes)
+                if (cluster.length >= 2 && cluster.length <= 50) {
+                    clusters.push(cluster);
+                    cluster.forEach(nodeId => {
+                        nodeClusters[nodeId] = clusterId;
+                    });
+                    clusterId++;
+                } else if (cluster.length > 50) {
+                    // Split large clusters into smaller ones
+                    const subClusters = splitLargeCluster(cluster, adjacency);
+                    subClusters.forEach(subCluster => {
+                        clusters.push(subCluster);
+                        subCluster.forEach(nodeId => {
+                            nodeClusters[nodeId] = clusterId;
+                        });
+                        clusterId++;
+                    });
+                }
+            });
+            
+            // Assign remaining isolated nodes to their own clusters
+            nodes.forEach(node => {
+                if (!nodeClusters.hasOwnProperty(node.id)) {
+                    nodeClusters[node.id] = clusterId++;
+                }
+            });
+            
+            console.log(`Detected ${clusters.length} clusters`);
+            return clusters;
+        }
+        
+        function splitLargeCluster(cluster, adjacency) {
+            // Split large clusters into smaller, more manageable ones
+            const subClusters = [];
+            const visited = new Set();
+            
+            cluster.forEach(nodeId => {
+                if (visited.has(nodeId)) return;
+                
+                const subCluster = [];
+                const queue = [nodeId];
+                visited.add(nodeId);
+                
+                while (queue.length > 0 && subCluster.length < 25) {
+                    const currentId = queue.shift();
+                    subCluster.push(currentId);
+                    
+                    if (adjacency[currentId]) {
+                        adjacency[currentId].forEach(neighborId => {
+                            if (!visited.has(neighborId) && subCluster.length < 25) {
+                                visited.add(neighborId);
+                                queue.push(neighborId);
+                            }
+                        });
+                    }
+                }
+                
+                if (subCluster.length > 0) {
+                    subClusters.push(subCluster);
+                }
+            });
+            
+            return subClusters;
+        }
+        
+        function updateProgressiveGraph() {
+            if (!graph || !networkData) return;
+            
+            // Filter nodes and links based on current max ID
+            const filteredNodes = networkData.nodes.filter(node => node.id <= currentMaxId);
+            const validNodeIds = new Set(filteredNodes.map(n => n.id.toString()));
+            
+            const filteredLinks = networkData.links.filter(link => 
+                validNodeIds.has(link.source.toString()) && validNodeIds.has(link.target.toString())
+            );
+            
+            // Detect clusters if in cluster mode
+            if (clusterMode) {
+                nodeClusters = {};
+                detectClusters(filteredNodes, filteredLinks);
+            }
+            
+            // Update the graph with filtered data
+            const progressiveData = {
+                nodes: filteredNodes.map(node => ({
+                    id: node.id.toString(),
+                    name: node.name,
+                    biography: node.biography_full,
+                    connections: node.connections,
+                    page: node.page_number,
+                    size: node.connections.length + 1,
+                    cluster: clusterMode ? (nodeClusters[node.id] !== undefined ? nodeClusters[node.id] : 0) : undefined
+                })),
+                links: filteredLinks.map(link => ({
+                    source: link.source.toString(),
+                    target: link.target.toString()
+                }))
+            };
+            
+            // Ensure all links reference valid nodes
+            const validProgressiveNodeIds = new Set(progressiveData.nodes.map(n => n.id));
+            progressiveData.links = progressiveData.links.filter(link => 
+                validProgressiveNodeIds.has(link.source) && validProgressiveNodeIds.has(link.target)
+            );
+            
+            console.log(`Progressive data: ${progressiveData.nodes.length} nodes, ${progressiveData.links.length} links`);
+            
+            graph.graphData(progressiveData);
+            
+            // Update display
+            document.getElementById('currentIdDisplay').textContent = currentMaxId;
+            
+            console.log(`Progressive mode: Showing ${filteredNodes.length} scientists (ID 1-${currentMaxId}) with ${filteredLinks.length} connections`);
+        }
+        
+        function toggleClusterMode() {
+            clusterMode = !clusterMode;
+            const clusterBtn = document.getElementById('clusterToggle');
+            
+            if (clusterBtn) {
+                if (clusterMode) {
+                    clusterBtn.textContent = 'Hide Clusters';
+                    clusterBtn.style.background = 'linear-gradient(45deg, #ff6b6b, #ee5a24)';
+                } else {
+                    clusterBtn.textContent = 'Show Clusters';
+                    clusterBtn.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+                }
+            }
+            
+            // Update the graph to show/hide clusters
+            if (progressiveMode) {
+                updateProgressiveGraph();
+            } else {
+                // Update full graph
+                const fullData = {
+                    nodes: networkData.nodes.map(node => ({
+                        id: node.id.toString(),
+                        name: node.name,
+                        biography: node.biography_full,
+                        connections: node.connections,
+                        page: node.page_number,
+                        size: node.connections.length + 1,
+                        cluster: clusterMode ? (nodeClusters[node.id] !== undefined ? nodeClusters[node.id] : 0) : undefined
+                    })),
+                    links: networkData.links.map(link => ({
+                        source: link.source.toString(),
+                        target: link.target.toString()
+                    }))
+                };
+                
+                if (clusterMode) {
+                    nodeClusters = {};
+                    detectClusters(networkData.nodes, networkData.links);
+                    fullData.nodes.forEach(node => {
+                        node.cluster = nodeClusters[node.id] !== undefined ? nodeClusters[node.id] : 0;
+                    });
+                }
+                
+                // Ensure all links reference valid nodes
+                const validFullNodeIds = new Set(fullData.nodes.map(n => n.id));
+                fullData.links = fullData.links.filter(link => 
+                    validFullNodeIds.has(link.source) && validFullNodeIds.has(link.target)
+                );
+                
+                console.log(`Full data: ${fullData.nodes.length} nodes, ${fullData.links.length} links`);
+                
+                graph.graphData(fullData);
+            }
+            
+            console.log(`Cluster mode: ${clusterMode ? 'enabled' : 'disabled'}`);
+            if (clusterMode) {
+                console.log('Node clusters:', nodeClusters);
+                console.log('Sample nodes with clusters:', Object.keys(nodeClusters).slice(0, 10));
+            }
+        }
+        
+        function toggleAutoRotate() {
+            autoRotate = !autoRotate;
+            if (autoRotate) {
+                graph.cameraPosition({ x: 0, y: 0, z: 300 });
+                graph.autoRotate(true, 1);
+            } else {
+                graph.autoRotate(false);
+            }
+        }
+
+        function handleSearchKeypress(event) {
+            if (event.key === 'Enter') {
+                searchScientist();
+            }
+        }
+
+        function searchScientist() {
+            const searchInput = document.getElementById('searchInput').value.trim();
+            const searchResults = document.getElementById('searchResults');
+            
+            if (!searchInput) {
+                showSearchMessage('Please enter a scientist name to search', 'error');
+                return;
+            }
+
+            if (!networkData || !graph) {
+                showSearchMessage('Network data not loaded yet', 'error');
+                return;
+            }
+
+            // Clear previous highlight
+            clearHighlight();
+
+            // First try exact match (case-insensitive)
+            let exactMatch = networkData.nodes.find(node => 
+                node.name.toLowerCase() === searchInput.toLowerCase()
+            );
+
+            if (exactMatch) {
+                highlightNode(exactMatch);
+                showSearchMessage(`Found: ${exactMatch.name}`, 'success');
+                return;
+            }
+
+            // Then try partial match
+            const matches = networkData.nodes.filter(node => 
+                node.name.toLowerCase().includes(searchInput.toLowerCase())
+            );
+
+            if (matches.length === 0) {
+                showSearchMessage(`No scientist found matching "${searchInput}"`, 'error');
+                return;
+            }
+
+            if (matches.length > 1) {
+                // Show list of matches
+                const matchNames = matches.slice(0, 5).map(n => n.name).join(', ');
+                const moreText = matches.length > 5 ? ` and ${matches.length - 5} more...` : '';
+                showSearchMessage(`Found ${matches.length} matches: ${matchNames}${moreText}. Please be more specific or select from dropdown.`, 'error');
+                return;
+            }
+
+            // Found exactly one match
+            const foundNode = matches[0];
+            highlightNode(foundNode);
+            showSearchMessage(`Found: ${foundNode.name}`, 'success');
+        }
+
+        function highlightNode(node) {
+            if (!graph) return;
+
+            highlightedNode = node;
+
+            // Get the actual node object from the graph
+            const graphData = graph.graphData();
+            const graphNode = graphData.nodes.find(n => n.id === node.id.toString());
+
+            if (!graphNode) {
+                console.error('Node not found in current graph view');
+                showSearchMessage('Node not visible in current view', 'error');
+                return;
+            }
+
+            // Store original color
+            if (graphNode.cluster !== undefined) {
+                const clusterColors = [
+                    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+                    '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
+                ];
+                originalNodeColor = clusterColors[graphNode.cluster % clusterColors.length];
+            } else {
+                const bluePalette = [
+                    '#E3F2FD', '#BBDEFB', '#90CAF9', '#64B5F6', '#42A5F5',
+                    '#2196F3', '#1E88E5', '#1976D2', '#1565C0', '#0D47A1',
+                    '#0D47A1', '#0A3D91', '#083882', '#063372', '#042962',
+                    '#031F52', '#021542', '#010B32', '#000122', '#000012',
+                    '#000012', '#000012', '#000012', '#000012', '#000012',
+                    '#000012', '#000012', '#000012', '#000012', '#000012',
+                    '#000012', '#000012', '#000012', '#000012', '#000012',
+                    '#000012', '#000012', '#000012', '#000012', '#000012',
+                    '#000012', '#000012', '#000012', '#000012', '#000012',
+                    '#000012', '#000012', '#000012', '#000012', '#000012'
+                ];
+                const nodeId = parseInt(node.id);
+                const paletteIndex = Math.min(Math.floor(nodeId / 30), bluePalette.length - 1);
+                originalNodeColor = bluePalette[paletteIndex];
+            }
+
+            // Highlight the node with bright yellow/gold
+            graph.nodeColor(graph.nodeColor())
+                .nodeColor(n => n.id === node.id.toString() ? '#FFD700' : 
+                    (n.cluster !== undefined ? (() => {
+                        const clusterColors = [
+                            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+                            '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
+                        ];
+                        return clusterColors[n.cluster % clusterColors.length];
+                    })() : (() => {
+                        const bluePalette = [
+                            '#E3F2FD', '#BBDEFB', '#90CAF9', '#64B5F6', '#42A5F5',
+                            '#2196F3', '#1E88E5', '#1976D2', '#1565C0', '#0D47A1',
+                            '#0D47A1', '#0A3D91', '#083882', '#063372', '#042962',
+                            '#031F52', '#021542', '#010B32', '#000122', '#000012',
+                            '#000012', '#000012', '#000012', '#000012', '#000012',
+                            '#000012', '#000012', '#000012', '#000012', '#000012',
+                            '#000012', '#000012', '#000012', '#000012', '#000012',
+                            '#000012', '#000012', '#000012', '#000012', '#000012',
+                            '#000012', '#000012', '#000012', '#000012', '#000012',
+                            '#000012', '#000012', '#000012', '#000012', '#000012'
+                        ];
+                        const nodeId = parseInt(n.id);
+                        const paletteIndex = Math.min(Math.floor(nodeId / 30), bluePalette.length - 1);
+                        return bluePalette[paletteIndex];
+                    })())
+                );
+
+            // Center camera on the node
+            const distance = 150;
+            const distRatio = 1 + distance / Math.hypot(graphNode.x, graphNode.y, graphNode.z);
+
+            graph.cameraPosition(
+                { x: graphNode.x * distRatio, y: graphNode.y * distRatio, z: graphNode.z * distRatio },
+                graphNode,
+                1000
+            );
+
+            // Show node info
+            showScientistInfo(graphNode);
+        }
+
+        function clearHighlight() {
+            const searchResults = document.getElementById('searchResults');
+            searchResults.style.display = 'none';
+            
+            if (!highlightedNode || !graph) return;
+
+            // Reset node color to original
+            graph.nodeColor(n => {
+                if (n.cluster !== undefined) {
+                    const clusterColors = [
+                        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                        '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+                        '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
+                    ];
+                    return clusterColors[n.cluster % clusterColors.length];
+                } else {
+                    const bluePalette = [
+                        '#E3F2FD', '#BBDEFB', '#90CAF9', '#64B5F6', '#42A5F5',
+                        '#2196F3', '#1E88E5', '#1976D2', '#1565C0', '#0D47A1',
+                        '#0D47A1', '#0A3D91', '#083882', '#063372', '#042962',
+                        '#031F52', '#021542', '#010B32', '#000122', '#000012',
+                        '#000012', '#000012', '#000012', '#000012', '#000012',
+                        '#000012', '#000012', '#000012', '#000012', '#000012',
+                        '#000012', '#000012', '#000012', '#000012', '#000012',
+                        '#000012', '#000012', '#000012', '#000012', '#000012',
+                        '#000012', '#000012', '#000012', '#000012', '#000012',
+                        '#000012', '#000012', '#000012', '#000012', '#000012'
+                    ];
+                    const nodeId = parseInt(n.id);
+                    const paletteIndex = Math.min(Math.floor(nodeId / 30), bluePalette.length - 1);
+                    return bluePalette[paletteIndex];
+                }
+            });
+
+            highlightedNode = null;
+            originalNodeColor = null;
+
+            // Clear search input
+            document.getElementById('searchInput').value = '';
+        }
+
+        function showSearchMessage(message, type) {
+            const searchResults = document.getElementById('searchResults');
+            searchResults.textContent = message;
+            searchResults.className = `search-results ${type}`;
+            searchResults.style.display = 'block';
+
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    searchResults.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadNetworkData);
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (graph) {
+                graph.width(window.innerWidth);
+                graph.height(window.innerHeight);
+            }
+        });
+    </script>
+</body>
+</html> 

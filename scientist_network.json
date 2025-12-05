@@ -1,0 +1,77 @@
+{
+  "metadata": {
+    "total_scientists": 6,
+    "total_relationships": 6,
+    "source": "Asimov's Biography of Scientists"
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "name": "IMHOTEP",
+      "biography_length": 972,
+      "connection_count": 0
+    },
+    {
+      "id": 2,
+      "name": "AHMOSE",
+      "biography_length": 3519,
+      "connection_count": 1
+    },
+    {
+      "id": 3,
+      "name": "THALES",
+      "biography_length": 4490,
+      "connection_count": 2
+    },
+    {
+      "id": 4,
+      "name": "ANAXIMANDER",
+      "biography_length": 3638,
+      "connection_count": 1
+    },
+    {
+      "id": 5,
+      "name": "ANAXIMENES",
+      "biography_length": 1241,
+      "connection_count": 2
+    },
+    {
+      "id": 6,
+      "name": "XENOPHANES",
+      "biography_length": 273,
+      "connection_count": 0
+    }
+  ],
+  "relationships": [
+    {
+      "source": 2,
+      "target": 3,
+      "type": "references"
+    },
+    {
+      "source": 3,
+      "target": 4,
+      "type": "references"
+    },
+    {
+      "source": 3,
+      "target": 5,
+      "type": "references"
+    },
+    {
+      "source": 4,
+      "target": 5,
+      "type": "references"
+    },
+    {
+      "source": 5,
+      "target": 3,
+      "type": "references"
+    },
+    {
+      "source": 5,
+      "target": 4,
+      "type": "references"
+    }
+  ]
+}
