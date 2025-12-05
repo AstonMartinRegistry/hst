@@ -45,3 +45,6 @@ instance/
 .env
 .flaskenv
 
+# Vercel
+.vercel
+
